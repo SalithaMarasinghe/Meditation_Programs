@@ -49,21 +49,52 @@ const getFileIcon = (type: string) => {
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-900">{resource.name}</p>
-                  <p className="text-xs text-gray-500">
-                    {fileExtension.toUpperCase()} • {Math.round(Math.random() * 5) + 1} MB
-                  </p>
                 </div>
               </div>
-              <a
-                href={resource.url}
-                download={resource.name}
+              <button
+                onClick={async (e) => {
+                  e.preventDefault();
+                  try {
+                    // Create a clean URL by removing query parameters
+                    const cleanUrl = new URL(resource.url);
+                    const pathParts = cleanUrl.pathname.split('/');
+                    const filename = pathParts[pathParts.length - 1];
+                    
+                    // Fetch the file
+                    const response = await fetch(cleanUrl.toString());
+                    const blob = await response.blob();
+                    
+                    // Create a blob URL
+                    const blobUrl = window.URL.createObjectURL(blob);
+                    
+                    // Create and trigger download
+                    const link = document.createElement('a');
+                    link.href = blobUrl;
+                    link.download = resource.name.includes('.') ? resource.name : `${resource.name}.${filename.split('.').pop()}`;
+                    document.body.appendChild(link);
+                    link.click();
+                    
+                    // Clean up
+                    setTimeout(() => {
+                      document.body.removeChild(link);
+                      window.URL.revokeObjectURL(blobUrl);
+                    }, 100);
+                  } catch (error) {
+                    console.error('Download error:', error);
+                    // Fallback to original URL if there's an error
+                    const link = document.createElement('a');
+                    link.href = resource.url;
+                    link.download = resource.name;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }
+                }}
                 className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                target="_blank"
-                rel="noopener noreferrer"
               >
                 <Download className="w-3.5 h-3.5 mr-1.5" />
                 Download
-              </a>
+              </button>
             </div>
           );
         })}

@@ -11,9 +11,15 @@ export const Timer: React.FC = () => {
   // Initialize the audio element
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      bellSoundRef.current = new Audio('/bell.mp3');
+      // Use the correct path to the bell sound in the public directory
+      bellSoundRef.current = new Audio(`${import.meta.env.BASE_URL}bell.mp3`);
       // Preload the audio
-      bellSoundRef.current.load();
+      const loadPromise = bellSoundRef.current.load();
+      if (loadPromise !== undefined) {
+        loadPromise.catch((error: Error) => {
+          console.error('Error loading bell sound:', error);
+        });
+      }
     }
     
     return () => {

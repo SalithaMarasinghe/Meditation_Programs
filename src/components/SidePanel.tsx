@@ -1,19 +1,64 @@
-import React from 'react';
+import React, { useEffect, useCallback, ReactNode } from 'react';
 import { MeditationProgram } from '../types';
-import { Play, Settings } from 'lucide-react';
+import { Play, X } from 'lucide-react';
 
 interface SidePanelProps {
   programs: MeditationProgram[];
   selectedProgram: MeditationProgram | null;
   onSelectProgram: (program: MeditationProgram) => void;
+  isOpen: boolean;
+  onClose: () => void;
+  onToggle: () => void;
+  isLoading?: boolean;
+  error?: string | null;
 }
 
 export const SidePanel: React.FC<SidePanelProps> = ({
-  programs,
+  programs = [],
   selectedProgram,
-  onSelectProgram
+  onSelectProgram,
+  isOpen,
+  onClose,
+  onToggle,
+  isLoading = false,
+  error = null
 }) => {
-  const renderProgramsList = () => {
+  const handleProgramSelect = useCallback((program: MeditationProgram) => {
+    onSelectProgram(program);
+    if (window.innerWidth < 768) {
+      onClose();
+    }
+  }, [onSelectProgram, onClose]);
+
+  // Escape key closes sidebar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  const renderContent = (): ReactNode => {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center h-32">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400"></div>
+        </div>
+      );
+    }
+    if (error) {
+      return (
+        <div className="p-4 text-red-600 text-sm bg-red-50 rounded m-2">
+          Error loading programs: {error}
+        </div>
+      );
+    }
     if (programs.length === 0) {
       return (
         <div className="text-center py-8">
@@ -21,68 +66,84 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         </div>
       );
     }
-
     return (
-      <>
-        {[...programs].reverse().map(program => (
-          <button
+      <div className="space-y-3 p-4">
+        {[...programs].reverse().map((program) => (
+          <div
             key={program.id}
-            onClick={() => onSelectProgram(program)}
-            className={`w-full text-left p-4 rounded-lg transition-all duration-200 group ${
+            onClick={() => handleProgramSelect(program)}
+            className={`p-3 rounded-lg cursor-pointer transition-colors ${
               selectedProgram?.id === program.id
-                ? 'bg-blue-50 border border-blue-200'
-                : 'hover:bg-gray-50 border border-transparent'
+                ? 'bg-blue-50 border-l-4 border-blue-500'
+                : 'hover:bg-gray-50 border-l-4 border-transparent'
             }`}
           >
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <h3 className="font-semibold text-gray-800 mb-1 group-hover:text-blue-600 transition-colors">
-                  {program.name}
-                </h3>
-                <p className="text-sm text-gray-600 line-clamp-2 mb-2">
-                  {program.description}
-                </p>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500">
-                    {program.pages.length} pages
-                  </span>
-                  {selectedProgram?.id === program.id && (
-                    <Play className="w-4 h-4 text-blue-600" />
-                  )}
-                </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium text-gray-900">{program.name}</h3>
+                <p className="text-sm text-gray-500">{program.description}</p>
               </div>
+              <Play className="h-4 w-4 text-gray-400" />
             </div>
-          </button>
+          </div>
         ))}
-      </>
+      </div>
     );
   };
 
   return (
-    <div className="w-72 md:w-80 bg-white border-r border-gray-200 flex flex-col h-full shadow-lg md:shadow-none">
-      <div className="p-6 border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">Meditation</h1>
-        <p className="text-gray-600 text-sm">Find your inner peace</p>
-      </div>
-
-      <div className="px-4 py-2 border-b border-gray-100 md:hidden">
-        <button 
-          onClick={() => {
-            // This will be handled by the parent's overlay click
-          }}
-          className="w-full flex items-center justify-end text-gray-500 hover:text-gray-700"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+    <>
+      {/* Menu Button - Now visible on all screen sizes */}
+      <button
+        onClick={onToggle}
+        className="fixed top-4 left-4 z-50 p-2 rounded-md bg-white shadow-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+        aria-label={isOpen ? 'Close menu' : 'Open menu'}
+      >
+        {isOpen ? (
+          <X className="h-6 w-6" />
+        ) : (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none"
+            viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round"
+              strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
           </svg>
-        </button>
-      </div>
+        )}
+      </button>
 
-      <div className="flex-1 overflow-y-auto p-4 pb-20 md:pb-4">
-        <div className="space-y-2">
-          {renderProgramsList()}
+      {/* Overlay - Now visible on all screen sizes when sidebar is open */}
+      <div
+        onClick={onClose}
+        style={{
+          opacity: isOpen ? 0.5 : 0,
+          pointerEvents: isOpen ? 'auto' : 'none',
+          transition: 'opacity 300ms ease-in-out'
+        }}
+        className="fixed inset-0 bg-black z-40"
+        aria-hidden="true"
+      />
+
+      {/* Sidebar - Always fixed overlay */}
+      <div
+        style={{
+          transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',
+          transition: 'transform 300ms ease-in-out'
+        }}
+        className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg z-50"
+      >
+        <div className="flex justify-between items-center p-4 border-b sticky top-0 bg-white z-10">
+          <h2 className="text-lg font-semibold">Programs</h2>
+          <button
+            onClick={onClose}
+            className="p-1 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            aria-label="Close menu"
+          >
+            <X className="h-5 w-5 text-gray-600" />
+          </button>
+        </div>
+        <div className="overflow-y-auto h-[calc(100%-4rem)]">
+          {renderContent()}
         </div>
       </div>
-    </div>
+    </>
   );
 };

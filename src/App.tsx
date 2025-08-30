@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { SidePanel } from './components/SidePanel';
 import { ProgramPage } from './components/ProgramPage';
 import { AdminDashboard } from './components/NewAdminDashboard';
 import { FirebaseService } from './services/firebaseService';
 import { MeditationProgram } from './types';
-import { BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import LoginPage from './pages/LoginPage';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -90,6 +90,7 @@ const AdminApp = () => {
 };
 
 // Component for User Interface
+
 const UserApp = () => {
   // State declarations at the top
   const [programs, setPrograms] = useState<MeditationProgram[]>([]);
@@ -98,7 +99,7 @@ const UserApp = () => {
   const [completedVideos, setCompletedVideos] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
+  
   // All effects together
   useEffect(() => {
     const unsubscribe = FirebaseService.onProgramsChange((newPrograms) => {
@@ -130,6 +131,11 @@ const UserApp = () => {
   };
 
   const handleSelectProgram = (program: MeditationProgram) => {
+    console.log('Selected program:', program);
+    console.log('Program pages:', program.pages);
+    if (program.pages && program.pages.length > 0) {
+      console.log('First page resources:', program.pages[0].resources);
+    }
     setSelectedProgram(program);
     setCurrentPageIndex(0);
     setCompletedVideos([]);
@@ -145,15 +151,7 @@ const UserApp = () => {
     }
   };
 
-  const handlePreviousPage = () => {
-    if (!selectedProgram) return;
-    if (currentPageIndex > 0) {
-      setCurrentPageIndex(prev => {
-        setTimeout(scrollToVideoPlayer, 0);
-        return prev - 1;
-      });
-    }
-  };
+  // Removed unused handlePreviousPage function
 
   const handleVideoComplete = (videoId: string) => {
     setCompletedVideos(prev => 
@@ -174,74 +172,50 @@ const UserApp = () => {
 
   return (
     <div className="flex h-screen bg-gray-50 relative">
-      {/* Mobile menu button */}
-      <button 
-        className="fixed top-4 left-4 z-30 p-2 rounded-md bg-white shadow-md md:hidden"
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
+      {/* Sidebar */}
+      <SidePanel
+        programs={programs}
+        selectedProgram={selectedProgram}
+        onSelectProgram={handleSelectProgram}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        onToggle={() => {
+          console.log('Toggling sidebar. Current state:', isSidebarOpen);
+          setIsSidebarOpen(prev => {
+            console.log('Setting sidebar to:', !prev);
+            return !prev;
+          });
+        }}
+      />
 
-      {/* Overlay for mobile */}
-      {isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
-      {/* SidePanel */}
-      <div 
-        className={`fixed md:relative z-30 h-full transition-transform duration-300 ease-in-out ${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-        }`}
-      >
-        <SidePanel
-          programs={programs}
-          selectedProgram={selectedProgram}
-          onSelectProgram={handleSelectProgram}
-        />
-      </div>
-      
-      <main className="flex-1 overflow-y-auto p-4 md:p-6">
-        {selectedProgram ? (
-          <div className="max-w-4xl mx-auto">
-            <ProgramPage 
-              programPage={{
-                ...selectedProgram.pages[currentPageIndex],
-                programResources: selectedProgram.resources
-              }} 
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-y-auto">
+          {selectedProgram ? (
+            <ProgramPage
+              programPage={selectedProgram.pages[currentPageIndex]}
               programName={selectedProgram.name}
+              programResources={selectedProgram.resources || []}
               onNextPage={handleNextPage}
-              hasNextPage={currentPageIndex < selectedProgram.pages.length - 1}
+              hasNextPage={currentPageIndex < (selectedProgram.pages.length - 1)}
               onVideoComplete={handleVideoComplete}
               completedVideos={completedVideos}
             />
-            <div className="mt-8 flex justify-between">
-              <button
-                onClick={handlePreviousPage}
-                disabled={currentPageIndex === 0}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50"
-              >
-                <ChevronLeft className="inline mr-1" /> Previous Page
-              </button>
-              <button
-                onClick={handleNextPage}
-                disabled={currentPageIndex >= selectedProgram.pages.length - 1}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50"
-              >
-                Next Page <ChevronRight className="inline ml-1" />
-              </button>
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center p-8 max-w-md">
+                <h2 className="text-2xl font-bold text-gray-800 mb-4">Welcome to Guided Meditations</h2>
+                <p className="text-gray-600 mb-6">Select a program from the sidebar to get started.</p>
+                <button
+                  onClick={() => setIsSidebarOpen(true)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 md:hidden"
+                >
+                  Browse Programs
+                </button>
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full text-gray-500">
-            <BookOpen className="w-12 h-12 mb-4 opacity-50" />
-            <p>Select a program to get started</p>
-          </div>
-        )}
+          )}
+        </div>
       </main>
     </div>
   );

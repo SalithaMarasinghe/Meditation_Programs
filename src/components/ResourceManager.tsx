@@ -69,13 +69,42 @@ export const ResourceManager = ({
       setIsUploading(false);
     }
   };
-  const handleDownload = (url: string, name: string) => {
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const handleDownload = async (url: string, name: string) => {
+    try {
+      // Create a clean URL by removing query parameters
+      const cleanUrl = new URL(url);
+      const pathParts = cleanUrl.pathname.split('/');
+      const filename = pathParts[pathParts.length - 1];
+      
+      // Fetch the file
+      const response = await fetch(cleanUrl.toString());
+      const blob = await response.blob();
+      
+      // Create a blob URL
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      // Create and trigger download
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = name.includes('.') ? name : `${name}.${filename.split('.').pop()}`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+      }, 100);
+    } catch (error) {
+      console.error('Download error:', error);
+      // Fallback to original URL if there's an error
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   return (
