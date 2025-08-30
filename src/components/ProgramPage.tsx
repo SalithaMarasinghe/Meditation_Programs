@@ -3,7 +3,6 @@ import { VideoPlayer } from './VideoPlayer';
 import { BookOpen, CheckCircle } from 'lucide-react';
 import { Timer } from './Timer';
 import { ProgramPage as ProgramPageType, Video, Resource } from '../types';
-import { ResourcesDownload } from './ResourcesDownload';
 
 // Helper function to format text with bold markers
 const formatTextWithBold = (text: string): ReactNode => {

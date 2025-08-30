@@ -1,11 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { SidePanel } from './components/SidePanel';
 import { ProgramPage } from './components/ProgramPage';
 import { AdminDashboard } from './components/NewAdminDashboard';
 import { FirebaseService } from './services/firebaseService';
 import { MeditationProgram } from './types';
-import { CheckCircle } from 'lucide-react';
 import LoginPage from './pages/LoginPage';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -144,7 +143,7 @@ const UserApp = () => {
   const handleNextPage = () => {
     if (!selectedProgram) return;
     if (currentPageIndex < selectedProgram.pages.length - 1) {
-      setCurrentPageIndex(prev => {
+      setCurrentPageIndex((prev: number) => {
         setTimeout(scrollToVideoPlayer, 0);
         return prev + 1;
       });
@@ -154,9 +153,7 @@ const UserApp = () => {
   // Removed unused handlePreviousPage function
 
   const handleVideoComplete = (videoId: string) => {
-    setCompletedVideos(prev => 
-      prev.includes(videoId) ? prev : [...prev, videoId]
-    );
+    setCompletedVideos((prev: string[]) => prev.includes(videoId) ? prev : [...prev, videoId]);
   };
 
   if (loading) {
@@ -181,7 +178,7 @@ const UserApp = () => {
         onClose={() => setIsSidebarOpen(false)}
         onToggle={() => {
           console.log('Toggling sidebar. Current state:', isSidebarOpen);
-          setIsSidebarOpen(prev => {
+          setIsSidebarOpen((prev: boolean) => {
             console.log('Setting sidebar to:', !prev);
             return !prev;
           });
